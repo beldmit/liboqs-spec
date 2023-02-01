@@ -1,0 +1,19 @@
+diff -up liboqs-0.7.2/.CMake/compiler_opts.cmake.nowerror liboqs-0.7.2/.CMake/compiler_opts.cmake
+--- liboqs-0.7.2/.CMake/compiler_opts.cmake.nowerror	2023-02-01 12:23:22.216137669 +0100
++++ liboqs-0.7.2/.CMake/compiler_opts.cmake	2023-02-01 12:23:47.927348251 +0100
+@@ -62,7 +62,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GN
+ endif()
+ 
+ if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+-    add_compile_options(-Werror)
+     add_compile_options(-Wall)
+     add_compile_options(-Wextra)
+     add_compile_options(-Wpedantic)
+@@ -109,7 +108,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+     endif()
+ 
+ elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+-    add_compile_options(-Werror)
+     add_compile_options(-Wall)
+     add_compile_options(-Wextra)
+     add_compile_options(-Wpedantic)
