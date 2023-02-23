@@ -1,14 +1,22 @@
 %global oqs_version 0.7.2
 Name:       liboqs
 Version:    %{oqs_version}
-Release:    0%{?dist}
+Release:    1%{?dist}
 Summary:    liboqs is an open source C library for quantum-safe cryptographic algorithms.
 
-License:    MIT
+#liboqs uses MIT license by itself but includes several files licensed under different terms.
+#src/common/crypto/sha3/xkcp_low/.../KeccakP-1600-AVX2.s : BSD-like CRYPTOGAMS license
+#src/common/rand/rand_nist.c: See file
+#see https://github.com/open-quantum-safe/liboqs/blob/main/README.md#license for more details
+License:    MIT AND Apache 2.0 AND BSD 3-Clause AND (BSD-3-Clause OR GPL-1.0-or-later) AND CC0-1.0 AND Unlicense
 URL:        https://github.com/open-quantum-safe/liboqs.git
+Source:     https://github.com/open-quantum-safe/liboqs/archive/refs/tags/0.7.2.tar.gz
 
-Source:     liboqs-%{oqs_version}.tar.gz
-Patch01:    01-nowerror.patch
+#-Werror is not future-compatible
+Patch:    01-nowerror.patch
+#Fix some gcc13 warnings to build correctly on Fedora 38
+Patch:    02-oqs_status_fix.patch
+
 BuildRequires: ninja-build
 BuildRequires: cmake
 BuildRequires: gcc
@@ -42,24 +50,17 @@ Header and Library files for doing development with liboqs.
 %autopatch -p1
 
 %build
-#%cmake -GNinja -DBUILD_SHARED_LIBS=ON -DOQS_ALGS_ENABLED=STD -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=$RPM_BUILD_ROOT -DCMAKE_INSTALL_LIBDIR=$RPM_BUILD_ROOT/%{_libdir} -DCMAKE_INSTALL_INCLUDEDIR=$RPM_BUILD_ROOT/%{_includedir}
-%cmake -GNinja -DBUILD_SHARED_LIBS=ON -DOQS_ALGS_ENABLED=STD -DCMAKE_BUILD_TYPE=Debug
-#OQS_VERSION=$(grep OQS_VERSION_TEXT ../include/oqs/oqsconfig.h)
-#OQS_VERSION=${OQS_VERSION##\#*OQS_VERSION_TEXT \"}
-#OQS_VERSION=${OQS_VERSION%\"}
-#echo $OQS_VERSION
-#if [ "%{oqs_version}" != "${OQS_VERSION}" ]; then
-#   echo "Spec oqs version %{oqs_version} != Library version ${OQS_VERSION}"
-#   echo "Need to update the liboqs.spec"
-#   exit 1;
-#fi
+%cmake -GNinja -DBUILD_SHARED_LIBS=ON -DOQS_ALGS_ENABLED=NIST_R4 -DCMAKE_BUILD_TYPE=Debug -DOQS_USE_AVX2_INSTRUCTIONS=OFF -DOQS_USE_AVX512_INSTRUCTIONS=OFF -LAH ..
 %cmake_build
 #ninja gen_docs
+
+%check
 #TODO tests
+cd "%{_vpath_builddir}"
+ninja run_tests
 
 %install
-find . -name "*.cmake"
-DESTDIR= cmake --install "%{_vpath_builddir}" -v
+%cmake_install
 for i in liboqsTargets.cmake liboqsTargets-debug.cmake
 do
   cp $RPM_BUILD_ROOT/%{_libdir}/cmake/liboqs/$i /tmp/$i
@@ -68,11 +69,12 @@ do
 done
 
 %files
+%license LICENSE.txt
 %{_libdir}/liboqs.so.%{oqs_version}
+%{_libdir}/liboqs.so.2
 
 %files devel
 %{_libdir}/liboqs.so
-%{_libdir}/liboqs.so.2
 %dir %{_includedir}/oqs
 %{_includedir}/oqs/*
 %dir %{_libdir}/cmake/liboqs
@@ -85,3 +87,6 @@ done
 #%doc %%{_datadir}/doc/oqs/xml/*
 
 %changelog
+* Mon Feb 13 2023 Dmitry Belyavskiy - 0.7.2-1
+- Initial build of liboqs for Fedora
+
